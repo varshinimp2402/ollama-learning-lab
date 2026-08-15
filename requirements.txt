@@ -1,0 +1,12 @@
+# Core Ollama examples
+ollama>=0.6,<1
+requests>=2.32,<3
+
+# PDF RAG demo
+streamlit>=1.50,<2
+PyMuPDF>=1.26,<2
+chromadb>=1.2,<2
+langchain>=0.3.27,<0.4
+langchain-community>=0.3.31,<0.4
+langchain-ollama>=0.3.10,<0.4
+langchain-text-splitters>=0.3.11,<0.4
