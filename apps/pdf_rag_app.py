@@ -14,10 +14,36 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
 
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
-EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY")
+
+IS_CLOUD = bool(OLLAMA_API_KEY)
+
+OLLAMA_HOST = os.getenv(
+    "OLLAMA_HOST",
+    "https://ollama.com" if IS_CLOUD else "http://localhost:11434",
+)
+
+MODEL = os.getenv(
+    "OLLAMA_MODEL",
+    "gpt-oss:20b" if IS_CLOUD else "llama3.2",
+)
+
+EMBED_MODEL = os.getenv(
+    "OLLAMA_EMBED_MODEL",
+    "nomic-embed-text",
+)
+
+CLIENT_KWARGS = (
+    {
+        "headers": {
+            "Authorization": f"Bearer {OLLAMA_API_KEY}"
+        }
+    }
+    if IS_CLOUD
+    else {}
+)
 
 QUERY_PROMPT = PromptTemplate(
     input_variables=["question"],
@@ -63,10 +89,15 @@ def build_vector_store(pdf_bytes: bytes, file_hash: str):
         )
         chunks = splitter.split_documents(documents)
 
-        embeddings = OllamaEmbeddings(
-            model=EMBED_MODEL,
-            base_url=OLLAMA_HOST,
-        )
+        if IS_CLOUD:
+            embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-MiniLM-L6-v2"
+            )
+        else:
+            embeddings = OllamaEmbeddings(
+                model=EMBED_MODEL,
+                base_url=OLLAMA_HOST,
+            )
 
         return Chroma.from_documents(
             documents=chunks,
